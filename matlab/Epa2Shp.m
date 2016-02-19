@@ -175,7 +175,7 @@ function Epa2Shp(inpname)
         u=1;
         ch=0;
         for i=d.getLinkPumpIndex
-            Head='';Flow='';Power='';
+            Head='';Flow='';Power=0;
             Spumps(u).dc_id=d.LinkNameID{i};        
             Spumps(u).node1=d.NodesConnectingLinksID{i,1};
             Spumps(u).node2=d.NodesConnectingLinksID{i,2};
@@ -199,6 +199,7 @@ function Epa2Shp(inpname)
 
                 Spumps(u).Head=Head;
                 Spumps(u).Flow=Flow;
+                Spumps(u).Power=0;
                 Spumps(u).Curve=d.getCurveNameID(headIndex(u));
             end
             indN1 = d.getNodeIndex(Spumps(u).node1);
