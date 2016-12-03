@@ -4,15 +4,20 @@ function Epa2Shp(inpname)
     d=epanet(inpname);
     warning off;
 
+    Sjunctions=struct;
+    Spipes=struct;
+    Svalves=struct;
+    Spumps=struct;
+    Stanks=struct;
+    Sreservoirs=struct;
+    
     % Write Junction Shapefile
-    load templates/Sjunctions.0 'Sjunctions' -mat
-
     ndcoords=d.getNodeCoordinates;
     if d.NodeJunctionCount
         for i=1:d.NodeJunctionCount
+            Sjunctions(i).dc_id=d.NodeNameID{i};
             Sjunctions(i).demand=d.NodeBaseDemands{1}(i);
             Sjunctions(i).elevation=d.NodeElevations(i);
-            Sjunctions(i).dc_id=d.NodeNameID{i};
             if ~isempty(d.getPatternNameID{1})
                 if ~isempty(d.NodeDemandPatternNameID{i})
                     Sjunctions(i).pattern=d.NodeDemandPatternNameID{i};
@@ -30,7 +35,6 @@ function Epa2Shp(inpname)
         shapewrite(Sjunctions, ['results/',f,'_junctions.shp']);
     end
     % Write Pipe Shapefile
-    load templates/Spipes.0 'Spipes' -mat
 
     if d.LinkCount
         mm=0;qq=0;
@@ -122,7 +126,6 @@ function Epa2Shp(inpname)
         shapewrite(Spipes, ['results/',f,'_pipes.shp']);
     end
     % Write Tank Shapefile
-    load templates/Stanks.0 'Stanks' -mat
 
     if d.NodeTankCount
         u=1;
@@ -147,9 +150,7 @@ function Epa2Shp(inpname)
         shapewrite(Stanks, ['results/',f,'_tanks.shp']);
     end
     % Write Reservoir Shapefile
-    
-    load templates/Sreservoirs.0 'Sreservoirs' -mat
-    
+        
     if d.NodeReservoirCount
         u=1;
         for i=d.getNodeReservoirIndex
@@ -168,9 +169,6 @@ function Epa2Shp(inpname)
     end
     
     % Write Pump Shapefile
-    load templates/Spumps.0 'Spumps' -mat
-
-
     if d.LinkPumpCount
         u=1;
         ch=0;
@@ -216,7 +214,6 @@ function Epa2Shp(inpname)
         shapewrite(Spumps, ['results/',f,'_pumps.shp']);
     end
     % Write Valve Shapefile
-    load templates/Svalves.0 'Svalves' -mat
 
     if d.LinkValveCount
         u=1;
@@ -226,7 +223,7 @@ function Epa2Shp(inpname)
             Svalves(u).node2=d.NodesConnectingLinksID{i,2};
 
             Svalves(u).diameter=d.LinkDiameter(i);
-            Svalves(u).type=d.LinkType(i);
+            Svalves(u).type=d.LinkType{i};
             Svalves(u).setting=d.LinkInitialSetting(i);
             Svalves(u).minorloss=d.LinkMinorLossCoeff(i);
 
