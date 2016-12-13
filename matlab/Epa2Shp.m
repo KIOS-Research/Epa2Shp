@@ -3,24 +3,30 @@ function Epa2Shp(inpname)
     format long g;
     d=epanet(inpname);
     warning off;
-
+    Sjunctions=struct;
+    Spipes=struct;
+    Svalves=struct;
+    Spumps=struct;
+    Stanks=struct;
+    Sreservoirs=struct;
+    
     % Write Junction Shapefile
-    load templates/Sjunctions.0 'Sjunctions' -mat
-
     ndcoords=d.getNodeCoordinates;
     if d.NodeJunctionCount
         for i=1:d.NodeJunctionCount
-            Sjunctions(i).demand=d.NodeBaseDemands{1}(i);
-            Sjunctions(i).elevation=d.NodeElevations(i);
-            Sjunctions(i).dc_id=d.NodeNameID{i};
-            if ~isempty(d.getPatternNameID{1})
-                if ~isempty(d.NodeDemandPatternNameID{i})
-                    Sjunctions(i).pattern=d.NodeDemandPatternNameID{i};
+            Sjunctions(i).('ID')=d.NodeNameID{i};
+            Sjunctions(i).('Elevation')=d.NodeElevations(i);
+            for u=1:length(d.NodeBaseDemands)
+                Sjunctions(i).(['Demand',num2str(u)])=d.NodeBaseDemands{u}(i);
+                if ~isempty(d.getPatternNameID{1})
+                    if ~isempty(d.NodeDemandPatternNameID{u})
+                        Sjunctions(i).(['Pattern',num2str(u)])=d.NodeDemandPatternNameID{u};
+                    else
+                        Sjunctions(i).(['Pattern',num2str(u)])='None';
+                    end
                 else
-                    Sjunctions(i).pattern='None';
+                    Sjunctions(i).(['Pattern',num2str(u)])='None';
                 end
-            else
-                Sjunctions(i).pattern='None';
             end
             Sjunctions(i).X=ndcoords{1}(i);
             Sjunctions(i).Y=ndcoords{2}(i);
@@ -30,7 +36,6 @@ function Epa2Shp(inpname)
         shapewrite(Sjunctions, ['results/',f,'_junctions.shp']);
     end
     % Write Pipe Shapefile
-    load templates/Spipes.0 'Spipes' -mat
 
     if d.LinkCount
         mm=0;qq=0;
@@ -38,79 +43,79 @@ function Epa2Shp(inpname)
             if sum(i==d.LinkPumpIndex)
                 for p=i+mm:i+1+mm
                     if p==i+mm
-                        Spipes(p).dc_id=[d.LinkNameID{p-mm},'_pump1'];
-                        Spipes(p).node1=d.NodesConnectingLinksID{p-mm,1};
-                        Spipes(p).node2=Spipes(p).dc_id;
-                        indN1 = d.getNodeIndex(Spipes(p).node1);
+                        Spipes(p).('ID')=[d.LinkNameID{p-mm},'_pump1'];
+                        Spipes(p).('NodeFrom')=d.NodesConnectingLinksID{p-mm,1};
+                        Spipes(p).('NodeTo')=Spipes(p).('ID');
+                        indN1 = d.getNodeIndex(Spipes(p).('NodeFrom'));
                         indN2 = d.getNodeIndex(d.NodesConnectingLinksID(p-mm,2));
 
                         Spipes(p).X=[ndcoords{1}(indN1) sum([ndcoords{1}(indN1) ndcoords{1}(indN2)])/2];
                         Spipes(p).Y=[ndcoords{2}(indN1) sum([ndcoords{2}(indN1) ndcoords{2}(indN2)])/2];                        
                         
                     elseif p==i+1+mm
-                        Spipes(p).dc_id=[d.LinkNameID{p-mm-1},'_pump2'];
-                        Spipes(p).node1=Spipes(p).dc_id;
-                        Spipes(p).node2=d.NodesConnectingLinksID{p-1-mm,2};
+                        Spipes(p).('ID')=[d.LinkNameID{p-mm-1},'_pump2'];
+                        Spipes(p).('NodeFrom')=Spipes(p).('ID');
+                        Spipes(p).('NodeTo')=d.NodesConnectingLinksID{p-1-mm,2};
                         indN1 = d.getNodeIndex(d.NodesConnectingLinksID(p-1-mm,1));
-                        indN2 = d.getNodeIndex(Spipes(p).node2);
+                        indN2 = d.getNodeIndex(Spipes(p).('NodeTo'));
 
                         Spipes(p).X=[(sum([ndcoords{1}(indN1) ndcoords{1}(indN2)])/2) ndcoords{1}(indN2)];
                         Spipes(p).Y=[(sum([ndcoords{2}(indN1) ndcoords{2}(indN2)])/2) ndcoords{2}(indN2)];                        
                     end
-                    Spipes(p).status='Open';
-                    Spipes(p).length=0;
-                    Spipes(p).diameter=0;
-                    Spipes(p).roughness=0;
-                    Spipes(p).minorloss=0;    
+                    Spipes(p).('Status')='Open';
+                    Spipes(p).('Length')=0;
+                    Spipes(p).('Diameter')=0;
+                    Spipes(p).('Roughness')=0;
+                    Spipes(p).('MinorLoss')=0;    
                     Spipes(p).Geometry='Line';
                 end
                 mm=mm+1;
             elseif sum(i==d.LinkValveIndex)
                 for p=i+mm+qq:i+mm+qq+1
                     if p==i+mm+qq
-                        Spipes(p).dc_id=[d.LinkNameID{p-mm-qq},'_valve1'];
-                        Spipes(p).node1=d.NodesConnectingLinksID{p-mm-qq,1};
-                        Spipes(p).node2=Spipes(p).dc_id;
-                        indN1 = d.getNodeIndex(Spipes(p).node1);
+                        Spipes(p).('ID')=[d.LinkNameID{p-mm-qq},'_valve1'];
+                        Spipes(p).('NodeFrom')=d.NodesConnectingLinksID{p-mm-qq,1};
+                        Spipes(p).('NodeTo')=Spipes(p).('ID');
+                        indN1 = d.getNodeIndex(Spipes(p).('NodeFrom'));
                         indN2 = d.getNodeIndex(d.NodesConnectingLinksID(p-mm-qq,2));
 
                         Spipes(p).X=[ndcoords{1}(indN1) sum([ndcoords{1}(indN1) ndcoords{1}(indN2)])/2];
                         Spipes(p).Y=[ndcoords{2}(indN1) sum([ndcoords{2}(indN1) ndcoords{2}(indN2)])/2];                        
                         
                     elseif p==i+mm+1+qq
-                        Spipes(p).dc_id=[d.LinkNameID{p-mm-qq-1},'_valve2'];
-                        Spipes(p).node1=Spipes(p).dc_id;
-                        Spipes(p).node2=d.NodesConnectingLinksID{p-mm-qq-1,2};
+                        Spipes(p).('ID')=[d.LinkNameID{p-mm-qq-1},'_valve2'];
+                        Spipes(p).('NodeFrom')=Spipes(p).('ID');
+                        Spipes(p).('NodeTo')=d.NodesConnectingLinksID{p-mm-qq-1,2};
                         indN1 = d.getNodeIndex(d.NodesConnectingLinksID(p-mm-qq-1,1));
-                        indN2 = d.getNodeIndex(Spipes(p).node2);
+                        indN2 = d.getNodeIndex(Spipes(p).('NodeTo'));
 
                         Spipes(p).X=[(sum([ndcoords{1}(indN1) ndcoords{1}(indN2)])/2) ndcoords{1}(indN2)];
                         Spipes(p).Y=[(sum([ndcoords{2}(indN1) ndcoords{2}(indN2)])/2) ndcoords{2}(indN2)];                        
                     end
-                    Spipes(p).status='Open';
-                    Spipes(p).length=0;
-                    Spipes(p).diameter=0;
-                    Spipes(p).roughness=0;
-                    Spipes(p).minorloss=0;    
+                    Spipes(p).('Status')='Open';
+                    Spipes(p).('Length')=0;
+                    Spipes(p).('Diameter')=0;
+                    Spipes(p).('Roughness')=0;
+                    Spipes(p).('MinorLoss')=0;    
                     Spipes(p).Geometry='Line';
                 end
                 qq=qq+1;
             else
-                Spipes(i).dc_id=d.LinkNameID{i};
-                Spipes(i).node1=d.NodesConnectingLinksID{i,1};
-                Spipes(i).node2=d.NodesConnectingLinksID{i,2};
+                Spipes(i).('ID')=d.LinkNameID{i};
+                Spipes(i).('NodeFrom')=d.NodesConnectingLinksID{i,1};
+                Spipes(i).('NodeTo')=d.NodesConnectingLinksID{i,2};
                 if d.LinkInitialStatus(i)==1
-                    Spipes(i).status='Open';
+                    Spipes(i).('Status')='Open';
                 else
-                    Spipes(i).status='Closed';
+                    Spipes(i).('Status')='Closed';
                 end
-                Spipes(i).length=d.LinkLength(i);
-                Spipes(i).diameter=d.LinkDiameter(i);
-                Spipes(i).roughness=d.LinkRoughnessCoeff(i);
-                Spipes(i).minorloss=d.LinkMinorLossCoeff(i);
+                Spipes(i).('Length')=d.LinkLength(i);
+                Spipes(i).('Diameter')=d.LinkDiameter(i);
+                Spipes(i).('Roughness')=d.LinkRoughnessCoeff(i);
+                Spipes(i).('MinorLoss')=d.LinkMinorLossCoeff(i);
 
-                indN1 = d.getNodeIndex(Spipes(i).node1);
-                indN2 = d.getNodeIndex(Spipes(i).node2);
+                indN1 = d.getNodeIndex(Spipes(i).('NodeFrom'));
+                indN2 = d.getNodeIndex(Spipes(i).('NodeTo'));
 
                 % Coordinates for pipes
                 Spipes(i).X=[ndcoords{1}(indN1) ndcoords{3}{i} ndcoords{1}(indN2) ];
@@ -122,19 +127,18 @@ function Epa2Shp(inpname)
         shapewrite(Spipes, ['results/',f,'_pipes.shp']);
     end
     % Write Tank Shapefile
-    load templates/Stanks.0 'Stanks' -mat
 
     if d.NodeTankCount
         u=1;
         for i=d.getNodeTankIndex
-            Stanks(u).dc_id=d.NodeNameID{i};        
-            Stanks(u).elevation=d.NodeElevations(i);
-            Stanks(u).initiallev=d.NodeTankInitialLevel(i);
-            Stanks(u).minimumlev=d.NodeTankMinimumWaterLevel(i);
-            Stanks(u).maximumlev=d.NodeTankMaximumWaterLevel(i);
-            Stanks(u).diameter=d.NodeTankDiameter(i);
-            Stanks(u).minimumvol=d.NodeTankMinimumWaterVolume(i);
-            Stanks(u).volumecurv=d.NodeTankVolumeCurveIndex(i);
+            Stanks(u).('ID')=d.NodeNameID{i};        
+            Stanks(u).('Elevation')=d.NodeElevations(i);
+            Stanks(u).('InitLevel')=d.NodeTankInitialLevel(i);
+            Stanks(u).('MinLevel')=d.NodeTankMinimumWaterLevel(i);
+            Stanks(u).('MaxLevel')=d.NodeTankMaximumWaterLevel(i);
+            Stanks(u).('Diameter')=d.NodeTankDiameter(i);
+            Stanks(u).('MinVolume')=d.NodeTankMinimumWaterVolume(i);
+            Stanks(u).('VolumeCurve')=d.NodeTankVolumeCurveIndex(i);
 
             % Coordinates for tanks
             Stanks(u).X=ndcoords{1}(i);
@@ -147,14 +151,12 @@ function Epa2Shp(inpname)
         shapewrite(Stanks, ['results/',f,'_tanks.shp']);
     end
     % Write Reservoir Shapefile
-    
-    load templates/Sreservoirs.0 'Sreservoirs' -mat
-    
+        
     if d.NodeReservoirCount
         u=1;
         for i=d.getNodeReservoirIndex
-            Sreservoirs(u).dc_id=d.NodeNameID{i};        
-            Sreservoirs(u).head=d.NodeElevations(i);
+            Sreservoirs(u).('ID')=d.NodeNameID{i};        
+            Sreservoirs(u).('Head')=d.NodeElevations(i);
 
             % Coordinates for reservoirs
             Sreservoirs(u).X=ndcoords{1}(i);
@@ -168,17 +170,14 @@ function Epa2Shp(inpname)
     end
     
     % Write Pump Shapefile
-    load templates/Spumps.0 'Spumps' -mat
-
-
     if d.LinkPumpCount
         u=1;
         ch=0;
         for i=d.getLinkPumpIndex
-            Head='';Flow='';Power=0;
-            Spumps(u).dc_id=d.LinkNameID{i};        
-            Spumps(u).node1=d.NodesConnectingLinksID{i,1};
-            Spumps(u).node2=d.NodesConnectingLinksID{i,2};
+            Head='';Flow=''; 
+            Spumps(u).('ID')=d.LinkNameID{i};        
+            Spumps(u).('NodeFrom')=d.NodesConnectingLinksID{i,1};
+            Spumps(u).('NodeTo')=d.NodesConnectingLinksID{i,2};
             headIndex = d.getHeadCurveIndex;
             if sum(headIndex)==0
                 Spumps(u).Head=Head;
@@ -193,17 +192,16 @@ function Epa2Shp(inpname)
                 curveXY = d.getCurveXY(headIndex(u));
 
                 for p=1:length(curveXY(:,1))
-                    Head = [Head,' ', num2str(curveXY(p,1))];
-                    Flow = [Flow,' ', num2str(curveXY(p,2))];
+                    Head = curveXY(p,1);
+                    Flow = curveXY(p,2);
+                    Spumps(u).(['Head',num2str(p)])=Head;
+                    Spumps(u).(['Flow',num2str(p)])=Flow;
                 end
-
-                Spumps(u).Head=Head;
-                Spumps(u).Flow=Flow;
                 Spumps(u).Power=0;
                 Spumps(u).Curve=d.getCurveNameID(headIndex(u));
             end
-            indN1 = d.getNodeIndex(Spumps(u).node1);
-            indN2 = d.getNodeIndex(Spumps(u).node2);
+            indN1 = d.getNodeIndex(Spumps(u).('NodeFrom'));
+            indN2 = d.getNodeIndex(Spumps(u).('NodeTo'));
 
             % Coordinates for pipes
             Spumps(u).X=sum([ndcoords{1}(indN1) ndcoords{3}{i} ndcoords{1}(indN2) ])/2;
@@ -216,22 +214,21 @@ function Epa2Shp(inpname)
         shapewrite(Spumps, ['results/',f,'_pumps.shp']);
     end
     % Write Valve Shapefile
-    load templates/Svalves.0 'Svalves' -mat
 
     if d.LinkValveCount
         u=1;
         for i=d.getLinkValveIndex
-            Svalves(u).dc_id=d.LinkNameID{i};        
-            Svalves(u).node1=d.NodesConnectingLinksID{i,1};
-            Svalves(u).node2=d.NodesConnectingLinksID{i,2};
+            Svalves(u).('ID')=d.LinkNameID{i};        
+            Svalves(u).('NodeFrom')=d.NodesConnectingLinksID{i,1};
+            Svalves(u).('NodeTo')=d.NodesConnectingLinksID{i,2};
 
-            Svalves(u).diameter=d.LinkDiameter(i);
-            Svalves(u).type=d.LinkType(i);
-            Svalves(u).setting=d.LinkInitialSetting(i);
-            Svalves(u).minorloss=d.LinkMinorLossCoeff(i);
+            Svalves(u).('Diameter')=d.LinkDiameter(i);
+            Svalves(u).('Type')=d.LinkType{i};
+            Svalves(u).('Setting')=d.LinkInitialSetting(i);
+            Svalves(u).('MinorLoss')=d.LinkMinorLossCoeff(i);
 
-            indN1 = d.getNodeIndex(Svalves(u).node1);
-            indN2 = d.getNodeIndex(Svalves(u).node2);
+            indN1 = d.getNodeIndex(Svalves(u).('NodeFrom'));
+            indN2 = d.getNodeIndex(Svalves(u).('NodeTo'));
 
             % Coordinates for pipes
             Svalves(u).X=sum([ndcoords{1}(indN1) ndcoords{3}{i} ndcoords{1}(indN2) ])/2;
